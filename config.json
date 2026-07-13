@@ -1,0 +1,16 @@
+{
+    "name": "LUCIA",
+    "full_name": "Learning Unified Cognitive Intelligence Assistant",
+    "version": "0.1",
+    "tone": "professional_friendly",
+    "purpose": "work assistant that learns and adapts",
+    "learning_mode": true,
+    "language": "hinglish",
+    "creator": "Mahadi",
+    "settings": {
+        "auto_save_memory": true,
+        "confirm_before_learning": true,
+        "show_emotion_detection": true,
+        "max_memory_results": 5
+    }
+}
