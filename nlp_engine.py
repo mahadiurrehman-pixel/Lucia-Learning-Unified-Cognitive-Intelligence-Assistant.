@@ -75,7 +75,7 @@ class LuciaNLP:
                 r"\b(?:yo|aoa|aslkm|slm|heyyy|heyya)\b"
             ],
             "name_ask": [
-                r"\b(?:mera naam kya hai|mera naam kya he|what is my name|what's my name)\b",
+                r"\b(?:mera naam kya hai|mera naam kya he|mera naam kia ha|mera naam kia hai|what is my name|what's my name)\b",
                 r"\b(?:my name kya hai|naam batao|mera name batao|mujhe kya kehte ho)\b",
                 r"\b(?:naam yaad hai|kaun hoon main|main kaun hoon|who am i)\b",
                 r"\b(?:do you know my name|remember my name|do you remember my name)\b",
@@ -91,6 +91,7 @@ class LuciaNLP:
             ],
             "memory_ask": [
                 r"\b(?:kya yaad hai|kya yaad rakha|kya yaad rakha hai|mujhe yaad karo)\b",
+                r"\b(?:tumhe kia yaad|tumhe kya yaad|kia yaad ha|kya yaad hai)\b",
                 r"\b(?:mere bare mein kya yaad|mere baare mein kya pata|mere baare me kya jaanti)\b",
                 r"\b(?:what do you know about me|what do you remember|what do you know)\b",
                 r"\b(?:do you remember|remember anything about me|kuch yaad hai)\b",
@@ -177,6 +178,7 @@ class LuciaNLP:
         }
         self.info_patterns = {
             "name": [
+                r"\b(?:mera naam|mera name)\s+(?!kia\b|kya\b)([A-Za-z][A-Za-z\'\-]{2,30})\s+(?:hai|he|ha|h)\b",
                 r"\b(?:mera naam|mera name)\s+([A-Za-z][A-Za-z\'\-]{2,30}?)(?:\s+(?:hai|he|hoon|hun|hain|tha|thi))?(?=$|[.,!?])",
                 r"\b(?:my name is|my name's)\s+([A-Za-z][A-Za-z\'\-]{2,30}?)(?:\s+(?:hai|he|hoon))?(?=$|[.,!?])",
                 r"\b(?:call me|you can call me|just call me|myself)\s+([A-Za-z][A-Za-z\'\-]{2,30}?)(?=$|[.,!?\s])",
@@ -189,7 +191,6 @@ class LuciaNLP:
             "age": [
                 r"\b(?:meri age(?: hai)?|meri umar(?: hai)?|my age(?: is)?|age(?: is)?|umar(?: hai)?)\s+(\d{1,3})\b",
                 r"\b(?:i am|i'm|main|mai)\s+(\d{1,3})\s*(?:years?\s*old|yrs?\s*old|saal(?: ka| ki)?|year old)\b",
-                r"\b(\d{1,3})\s*(?:saal(?: ka| ki)?|years?\s*old|yrs?\s*old|year old)\b"
             ],
             "company": [
                 r"\b(?:meri company(?: ka naam)?|my company(?: name)?|company ka naam|company name)\s*(?:hai|is)?\s*([A-Za-z0-9][A-Za-z0-9&.,'()\-\/\s]{1,60}?)(?=$|[.,!?])",
@@ -363,29 +364,29 @@ class LuciaNLP:
 
         return "statement"
 #_____test____________
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    nlp = LuciaNLP()
+#     nlp = LuciaNLP()
 
-    tests = [
-        "Mera naam Mahadi hai",
-        "Mera naam kya hai?",
-        "Mujhe deadline ka pressure hai",
-        "Main bahut khush hoon aaj!",
-        "Hamari company ka workflow ye hai",
-        "help chahiye",
-        "bye Allah hafiz",
-        "Meri age 22 saal hai",
-        "I work at Google",
-        "mujhe coding pasand hai",
-    ]
+#     tests = [
+#         "Mera naam Mahadi hai",
+#         "Mera naam kya hai?",
+#         "Mujhe deadline ka pressure hai",
+#         "Main bahut khush hoon aaj!",
+#         "Hamari company ka workflow ye hai",
+#         "help chahiye",
+#         "bye Allah hafiz",
+#         "Meri age 22 saal hai",
+#         "I work at Google",
+#         "mujhe coding pasand hai",
+#     ]
 
-    for msg in tests:
-        print(f"\n{'─'*45}")
-        print(f"📝 Input   : {msg}")
-        r = nlp.analyze(msg)
-        print(f"😊 Emotion : {r['emotion']} ({r['emotion_score']})")
-        print(f"🎯 Intent  : {r['intent']}")
-        print(f"🔑 Keywords: {r['keywords']}")
-        print(f"📋 Info    : {r['extracted_info']}")
-        print(f"📂 Type    : {nlp.classify_text(msg)}")
+#     for msg in tests:
+#         print(f"\n{'─'*45}")
+#         print(f"📝 Input   : {msg}")
+#         r = nlp.analyze(msg)
+#         print(f"😊 Emotion : {r['emotion']} ({r['emotion_score']})")
+#         print(f"🎯 Intent  : {r['intent']}")
+#         print(f"🔑 Keywords: {r['keywords']}")
+#         print(f"📋 Info    : {r['extracted_info']}")
+#         print(f"📂 Type    : {nlp.classify_text(msg)}")
