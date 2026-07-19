@@ -1,74 +1,7 @@
 from textblob import TextBlob
 import re
-from langdetect import detect as lang_detect, LangDetectException
-import argostranslate.translate
-import argostranslate.package
-from rapidfuzz import fuzz, process
-
-
 class LuciaNLP:
     def __init__(self):
-        self.hinglish_strong_markers = {
-            # Personal pronouns — ye sirf Hinglish mein hote hain
-            "main", "mai", "mujhe", "mujhay", "mera", "meri", "mere",
-            "hum", "humara", "hamara", "humari", "hamari",
-            "tum", "tumhara", "tumhari", "aap", "aapka", "aapki",
-            # Core Urdu/Hindi verbs — English mein nahi hote
-            "hoon", "hain", "hoga", "hogi",
-            "karo", "karna", "karta", "karti",
-            "gaya", "gayi", "gaye", "aaya", "aayi", "aaye",
-            "raha", "rahi", "rahe", "chahiye", "chahte", "chahti",
-            # Core Urdu words
-            "nahi", "nahin", "bilkul", "zaroor", "kyunki", "isliye",
-            "kaise", "kahan", "kaun", "kitna", "kitni",
-            # Pure Urdu greetings
-            "shukriya", "meherbani", "shukria",
-        }
-
-        self.hinglish_support_markers = {
-            # Casual address words
-            "yaar", "bhai", "bhen", "dost", "janu", "jaan",
-            "abbu", "ammi", "appa",
-            # Expressions — sirf Hinglish mein
-            "accha", "achha", "acha", "theek",
-            "waise", "matlab",
-            "arrey", "arre", "oho", "oye", "uff", "uffo",
-            "mashallah", "inshallah", "alhamdulillah", "subhanallah",
-            # Quantity words — Urdu specific
-            "bahut", "bohot", "zyada", "thoda", "thodi",
-            # Pure Urdu adjectives
-            "bura", "sacha", "jhuta", "purana",
-            "bada", "chota", "lambi", "choti", "garam", "thanda",
-            # Urdu action words
-            "batao", "bata", "dekho", "dekh", "suno", "sun",
-            "ruko", "ruk",
-            # Time — Urdu specific
-            "aaj", "kal", "parso", "abhi",
-            "subah", "shaam", "raat", "dopahar", "jaldi", "dheere",
-            # Urdu particles
-            "wala", "wali", "wale", "walay",
-            # Common Urdu nouns
-            "ghar", "kaam", "baat", "cheez", "jagah", "waqt",
-            "paisa", "khana", "pani", "rishta", "zindagi",
-            "dil", "dimag",
-            # Emotions — Urdu
-            "khush", "udaas", "gussa", "pareshan", "thaka", "thaki",
-        }
-
-        self.roman_urdu_markers = {
-            "allah", "allaah", "quran", "namaz", "roza", "zakat",
-            "masjid", "ibadat", "tawakkul",
-            "walid", "walida", "beta", "beti", "behan",
-            "chacha", "chachi", "mama", "mami", "nana", "nani",
-            "dada", "dadi", "phupho", "phuppa", "khala", "khalu",
-            "mohabbat", "ishq", "pyaar", "izzat", "sharam",
-            "koshish", "umeed", "yakeen", "bharosa",
-        }
-
-        self.arabic_only_chars = set("ةىإأؤئءًٌٍَُِّْ")
-
-        # Ye chars Urdu mein hote hain Arabic mein nahi
-        self.urdu_only_chars = set("پچڈڑژگھ")
         self.emotion_keywords = {
             "stressed": [
                 "stress", "pressure", "tension", "deadline", "pareshan",
@@ -122,11 +55,11 @@ class LuciaNLP:
                 "begin", "fired up", "tayyar", "josh", "energy",
                 "focused", "goal", "achieve", "kar dunga", "kar lungi",
                 "hard work", "determined", "inspired", "positive",
-                "confidence", "self belief", "hustle", "grind",
-                "never give up", "try again", "improve", "discipline",
-                "success", "winner", "dream", "aim", "mission",
-                "dedicated", "believe in myself",
-                "strong banunga", "strong banungi"
+                "confidence", "self belief",
+                "hustle", "grind", "never give up", "try again",
+                "improve", "discipline", "success", "winner",
+                "dream", "aim", "mission", "dedicated",
+                "believe in myself", "strong banunga", "strong banungi"
             ]
         }
 
@@ -243,7 +176,6 @@ class LuciaNLP:
                 r"\b(?:busy|bahut busy|bohat busy|kaam ka bojh|kaam nahi ho raha)\b"
             ]
         }
-
         self.info_patterns = {
             "name": [
                 r"\b(?:mera naam|mera name)\s+(?!kia\b|kya\b)([A-Za-z][A-Za-z\'\-]{2,30})\s+(?:hai|he|ha|h)\b",
@@ -325,7 +257,6 @@ class LuciaNLP:
                 r"\b(?:mera bhai|meri behen|mere walid|meri walida|my brother|my sister|my father|my mother)\s+(.+?)(?=$|[.!?])"
             ]
         }
-
         self.stop_words = {
             "mera", "meri", "mere", "hai", "hain", "ka", "ki", "ke",
             "ko", "se", "mein", "par", "ye", "wo", "kya", "kaise",
@@ -342,298 +273,62 @@ class LuciaNLP:
             "wali", "wale", "ab", "jab", "tab", "kab", "mai"
         }
 
-        self._translation_cache = {}
-        self._installed_lang_pairs = set()
-
-        print("[NLP] Upgraded NLP Engine initialized!")
-
-    def is_hinglish(self, text):
+        print("[NLP]  NLP Engine initialized!")
+    def analyze(self,text):
+        result ={
+            "emotion" : "neutral",
+            "emotion_score" :0.0,
+            "intent" : "general",
+            "keywords":[],
+            "extracted_info":{},
+            "original_text":text
+        }
+        emotion, score=self.detect_emotion(text)
+        result["emotion"]=emotion
+        result["emotion_score"]=score
+        result["intent"] = self.detect_intent(text)
+        result["keywords"]=self.extract_keywords(text)
+        result["extracted_info"]=self.extract_information(text)
+        return result
+    def detect_emotion(self,text):
         text_lower = text.lower()
-        words = set(text_lower.split())
-
-       
-        non_roman_count = sum(
-            1 for c in text if not c.isascii()
-        )
-        if non_roman_count >= 3:
-            return False
-
-       
-        if words & self.hinglish_strong_markers:
-            return True
-
-        if len(words & self.hinglish_support_markers) >= 2:
-            return True
-
-
-        if words & self.roman_urdu_markers:
-            return True
-
-        all_hinglish = (
-            self.hinglish_strong_markers |
-            self.hinglish_support_markers |
-            self.roman_urdu_markers
-        )
-        hinglish_count = len(words & all_hinglish)
-        total = len(words)
-
-        if total > 0 and hinglish_count / total >= 0.20:
-            return True
-
-        return False
-    def detect_language(self, text):
-        non_roman = sum(1 for c in text if not c.isascii())
-
-        if non_roman >= 3:
-            text_chars = set(text)
-
-            # Arabic specific chars check
-            arabic_specific = text_chars & self.arabic_only_chars
-            # Urdu specific chars check
-            urdu_specific = text_chars & self.urdu_only_chars
-
-            if arabic_specific and not urdu_specific:
-                return "ar"  
-
-            if urdu_specific:
-                return "ur"  
-
-            try:
-                detected = lang_detect(text)
- 
-                if detected in ("ar", "ur", "fa"):
-                    return detected
-                return detected
-            except LangDetectException:
-                return "ur" 
-
-        if self.is_hinglish(text):
-            return "hinglish"
-
-        try:
-            if len(text.strip()) < 8:
-                return "en"
-
-            detected = lang_detect(text)
-
-            if detected == "hi":
-                roman_count = sum(
-                    1 for c in text if c.isascii() and c.isalpha()
-                )
-                total_alpha = sum(1 for c in text if c.isalpha())
-                if total_alpha > 0 and roman_count / total_alpha > 0.5:
-                    return "hinglish"
-
-            return detected
-
-        except LangDetectException:
-            return "en"
-
-
-    def _is_valid_translation(self, original, translated):
-        if not translated:
-            return False
-
-        # Length check — translated 5x se zyada nahi hona chahiye
-        if len(translated) > len(original) * 5:
-            return False
-
-        # Repeated pattern check
-        # Agar first 8 chars 4 baar repeat ho raha hai → garbage
-        if len(translated) > 32:
-            prefix = translated[:8]
-            if translated.count(prefix) > 4:
-                return False
-
-        # Same as original check (translation nahi hui)
-        if translated.strip().lower() == original.strip().lower():
-            return False
-
-        return True
-
-    def _ensure_language_installed(self, from_code, to_code="en"):
-        pair = f"{from_code}-{to_code}"
-        if pair in self._installed_lang_pairs:
-            return True
-        try:
-            argostranslate.package.update_package_index()
-            available = argostranslate.package.get_available_packages()
-            pkg = next(
-                (p for p in available
-                 if p.from_code == from_code
-                 and p.to_code == to_code),
-                None
-            )
-            if pkg:
-                argostranslate.package.install_from_path(pkg.download())
-                self._installed_lang_pairs.add(pair)
-                print(f"[NLP] Language pack {pair} installed!")
-                return True
-            print(f"[NLP] Pack {pair} not found!")
-            return False
-        except Exception as e:
-            print(f"[NLP] Install error: {e}")
-            return False
-
-    def translate_to_english(self, text, source_lang):
-        cache_key = f"{source_lang}:{text}"
-        if cache_key in self._translation_cache:
-            return self._translation_cache[cache_key]
-
-        try:
-            installed = self._ensure_language_installed(
-                source_lang, "en"
-            )
-            if not installed:
-                return None  
-
-            result = argostranslate.translate.translate(
-                text, source_lang, "en"
-            )
-            if self._is_valid_translation(text, result):
-                self._translation_cache[cache_key] = result
-                return result
-            else:
-                print(
-                    f"[NLP] Invalid translation detected "
-                    f"for lang: {source_lang}"
-                )
-                return None  # Garbage hai → None return karo
-
-        except Exception as e:
-            print(f"[NLP] Translation error: {e}")
-            return None
-    def fuzzy_emotion_match(self, text, threshold=75):
-        words = text.lower().split()
-        emotion_scores = {}
-        for emotion, keywords in self.emotion_keywords.items():
-            score = 0
-            for word in words:
-                if len(word) < 3:
-                    continue
-                match = process.extractOne(
-                    word, keywords, scorer=fuzz.ratio
-                )
-                if match and match[1] >= threshold:
-                    score += 1
-            if score > 0:
-                emotion_scores[emotion] = min(score / 3.0, 1.0)
-        return emotion_scores
-
-    def detect_emotion(self, text, translated_text=None):
-        text_lower = text.lower()
-        emotion_score = {}
-
-        for emotion, keywords in self.emotion_keywords.items():
+        emotion_score={}
+        for emotion ,keywords in self.emotion_keywords.items():
             score = sum(1 for kw in keywords if kw in text_lower)
-            if score > 0:
-                emotion_score[emotion] = min(score / 3.0, 1.0)
-
-        if translated_text:
-            trans_lower = translated_text.lower()
-            for emotion, keywords in self.emotion_keywords.items():
-                score = sum(1 for kw in keywords if kw in trans_lower)
-                if score > 0:
-                    existing = emotion_score.get(emotion, 0)
-                    emotion_score[emotion] = max(
-                        existing, min(score / 3.0, 1.0)
-                    )
-
-        fuzzy_scores = self.fuzzy_emotion_match(text)
-        for emotion, score in fuzzy_scores.items():
-            if emotion not in emotion_score:
-                emotion_score[emotion] = score * 0.8
-
-        sentiment_text = translated_text if translated_text else text
+            if score>0:
+                emotion_score[emotion]=min(score/3.0,1.0)
         try:
-            polarity = TextBlob(sentiment_text).sentiment.polarity
-            if polarity > 0.3:
-                emotion_score["happy"] = (
-                    emotion_score.get("happy", 0) + polarity
-                )
-            elif polarity < -0.3:
-                emotion_score["sad"] = (
-                    emotion_score.get("sad", 0) + abs(polarity)
-                )
+            polarity=TextBlob(text).sentiment.polarity
+            if polarity>0.3:
+                emotion_score["happy"]=emotion_score.get("happy",0)+polarity
+            elif polarity<-0.3:
+                emotion_score["sad"]=emotion_score.get("sad",0)+abs(polarity)
         except Exception:
             pass
-
         if emotion_score:
-            best = max(emotion_score, key=emotion_score.get)
-            score = round(min(emotion_score[best], 1.0), 2)
-            return best, score
+            best = max(emotion_score,key=emotion_score.get)
+            score =round(min(emotion_score[best],1.0),2)
+            return best , score
         return "neutral", 0.0
-
-    def analyze(self, text):
-        result = {
-            "emotion": "neutral",
-            "emotion_score": 0.0,
-            "intent": "general",
-            "keywords": [],
-            "extracted_info": {},
-            "original_text": text,
-            "detected_language": "en",
-            "translated_text": None
-        }
-
-        detected_lang = self.detect_language(text)
-        result["detected_language"] = detected_lang
-
-        translated_text = None
-        if detected_lang not in ("en", "hinglish"):
-            translated_text = self.translate_to_english(
-                text, detected_lang
-            )
-            result["translated_text"] = translated_text
-
-        emotion, score = self.detect_emotion(text, translated_text)
-        result["emotion"] = emotion
-        result["emotion_score"] = score
-
-        intent = self.detect_intent(text)
-        if intent == "general" and translated_text:
-            intent = self.detect_intent(translated_text)
-        result["intent"] = intent
-
-        keywords = self.extract_keywords(text)
-        if translated_text:
-            trans_keywords = self.extract_keywords(translated_text)
-            merged = keywords + [
-                k for k in trans_keywords if k not in keywords
-            ]
-            result["keywords"] = merged
-        else:
-            result["keywords"] = keywords
-
-        extracted = self.extract_information(text)
-        if not extracted and translated_text:
-            extracted = self.extract_information(translated_text)
-        result["extracted_info"] = extracted
-
-        return result
-
     def detect_intent(self, text):
-        text_lower = text.lower()
-        for intent, patterns in self.intent_patterns.items():
-            for pattern in patterns:
-                if re.search(pattern, text_lower):
+        text_lower=text.lower()
+        for intent, pattern in self.intent_patterns.items():
+            for patterns in pattern:
+                if re.search(patterns,text_lower):
                     return intent
         return "general"
-
     def extract_keywords(self, text):
-        words = re.findall(r"\b\w+\b", text.lower())
-        keywords = [
+        words = re.findall(r"\b\w+\b",text.lower())
+        keywords=[
             w for w in words
-            if w not in self.stop_words and len(w) > 2
+            if w not in self.stop_words and len(w)>2
         ]
         return list(dict.fromkeys(keywords))
-
-    def extract_information(self, text):
-        extracted = {}
-        text_lower = text.lower()
+    def extract_information(self,text):
+        extracted={}
+        text_lower=text.lower()
         is_question = text.strip().endswith("?") or \
-                      any(text_lower.startswith(w) for w in
-                          ["kya", "what", "who", "kaun"])
+                  any(text_lower.startswith(w) for w in ["kya", "what", "who", "kaun"])
         for info_type, patterns in self.info_patterns.items():
             if info_type == "name" and is_question:
                 continue
@@ -645,17 +340,15 @@ class LuciaNLP:
                         value = value.capitalize()
                     extracted[info_type] = value
                     break
-        return extracted
 
-    def classify_text(self, text):
+        return extracted
+    def classify_text(self,text):
         text_lower = text.lower().strip()
         question_words = [
             "kya", "kaise", "kab", "kahan", "kaun", "kitna",
             "what", "how", "when", "where", "who", "which", "why"
         ]
-        if text.endswith("?") or any(
-            text_lower.startswith(w) for w in question_words
-        ):
+        if text.endswith("?") or any(text_lower.startswith(w) for w in question_words):
             return "question"
         command_words = [
             "batao", "dikhao", "karo", "save", "delete", "bhool",
@@ -666,51 +359,34 @@ class LuciaNLP:
         all_emotion_words = [
             kw for kws in self.emotion_keywords.values() for kw in kws
         ]
-        if sum(
-            1 for w in text_lower.split() if w in all_emotion_words
-        ) >= 2:
+        if sum(1 for w in text_lower.split() if w in all_emotion_words) >= 2:
             return "emotional"
+
         return "statement"
+#_____test____________
+# if __name__ == "__main__":
 
+#     nlp = LuciaNLP()
 
-# =================== FIXED TESTS ===================
-if __name__ == "__main__":
-    nlp = LuciaNLP()
+#     tests = [
+#         "Mera naam Mahadi hai",
+#         "Mera naam kya hai?",
+#         "Mujhe deadline ka pressure hai",
+#         "Main bahut khush hoon aaj!",
+#         "Hamari company ka workflow ye hai",
+#         "help chahiye",
+#         "bye Allah hafiz",
+#         "Meri age 22 saal hai",
+#         "I work at Google",
+#         "mujhe coding pasand hai",
+#     ]
 
-    tests = [
-        # Hinglish
-        ("main bahut stressed hoon", "Hinglish — Basic"),
-        ("yaar kya scene hai", "Hinglish — Casual"),
-        ("bhai kal milte hain", "Hinglish — Short"),
-        ("theek hai bro chal jaate", "Hinglish — Mixed"),
-        ("bohot thak gaya hoon yaar", "Hinglish — Emotion"),
-        ("kaam nahi ho raha dimag kharab", "Hinglish — Stressed"),
-        ("main stresed hoon", "Hinglish — Spelling Mistake"),
-        ("inshallah sab theek ho jaye ga", "Roman Urdu"),
-        # English
-        ("I am very happy today", "English"),
-        ("feeling so stressed about work", "English"),  # ← Fix
-        # Other
-        ("أنا سعيد جداً", "Arabic"),                   # ← Fix
-        ("Je suis stressé", "French"),
-        ("Estoy muy feliz", "Spanish"),                 # ← Fix
-        ("میں بہت خوش ہوں آج", "Urdu Script"),
-    ]
-
-    print("\n" + "=" * 55)
-    print("   FIXED DETECTION TESTS")
-    print("=" * 55)
-
-    for text, label in tests:
-        r = nlp.analyze(text)
-        lang = r["detected_language"]
-
-        expected_hinglish = "Hinglish" in label or "Roman Urdu" in label
-        got_hinglish = lang == "hinglish"
-        status = "✅" if (expected_hinglish == got_hinglish) else "❌"
-
-        print(f"\n{status} [{label}]")
-        print(f"   Input      : {text}")
-        print(f"   Language   : {lang}")
-        print(f"   Emotion    : {r['emotion']} ({r['emotion_score']})")
-        print(f"   Translated : {r['translated_text']}")
+#     for msg in tests:
+#         print(f"\n{'─'*45}")
+#         print(f"📝 Input   : {msg}")
+#         r = nlp.analyze(msg)
+#         print(f"😊 Emotion : {r['emotion']} ({r['emotion_score']})")
+#         print(f"🎯 Intent  : {r['intent']}")
+#         print(f"🔑 Keywords: {r['keywords']}")
+#         print(f"📋 Info    : {r['extracted_info']}")
+#         print(f"📂 Type    : {nlp.classify_text(msg)}")
