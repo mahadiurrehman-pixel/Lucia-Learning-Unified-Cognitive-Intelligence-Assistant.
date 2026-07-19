@@ -8,9 +8,8 @@ class LuciaPersonality:
         self.tone=self.config.get("tone","professional_friendly")
         self.learning_mode = self.config.get("learning_mode",True)
         self.greeting={
-            "first_time": [
-                "Welcome! 🚀 Main Lucia hoon — Learning Unified Cognitive Intelligence Assistant.\n Ek AI companion jo tumhe seekhne, sochne aur create karne mein empower karti hai. ✨",
-                "Tumhara naam kya hai? Batao batao, taake Lucia tumhe pehchan sake. ✨"
+            "first_time":["Welcome! 🚀 Main Lucia hoon — Learning Unified Cognitive Intelligence Assistant.\n Ek AI companion jo tumhe seekhne, sochne aur create karne mein empower karti hai. ✨""",
+            "Tumhara naam kya hai? Batao batao, taake Lucia tumhe pehchan sake. ✨"
             ],
             "returning":["Hey {name}! 👋 Welcome back. Kaise ho? Lucia yahan hai — batao,\n aaj kis  cheez mein help chahiye? ✨","Hey {name}! 😊 Tum wapas aa gaye. Lucia khush hai tumhe dobara dekh kar. Batao,\naaj ka mission kya hai? 🚀","Hey {name}! 👋 Lucia is back with you.Kya explore karein aaj? 🚀"
             ],
