@@ -31,7 +31,7 @@ class LuciaLearning:
     def confirm_learning(self,confirmed=True):
         if not self.pending_item:
             return "Kuch Pending nhi ha save ke liye"
-        item=self.pending_item.pop()
+        item=self.pending_item.pop(0)
         if confirmed:
             self.memory.save_learned_info(
                 topic=item["topic"],
